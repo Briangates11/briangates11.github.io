@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K&D Commercial — Team Check-In</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f3;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem}
+.wrap{width:100%;max-width:560px}
+.logo{text-align:center;margin-bottom:1.5rem}
+.logo-mark{display:inline-block;background:#7A9B49;color:#fff;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:6px 14px;border-radius:6px}
+.card{background:#fff;border:1px solid #e8e8e5;border-radius:14px;padding:2rem}
+.tag{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#aaa;margin-bottom:.5rem}
+.accent{width:32px;height:3px;background:#7A9B49;border-radius:2px;margin-bottom:1.25rem}
+.h1{font-size:20px;font-weight:700;color:#1a1a1a;line-height:1.35;margin-bottom:1rem}
+.sub{font-size:15px;color:#666;line-height:1.6;margin-bottom:1.5rem}
+.q-list{display:flex;flex-direction:column;gap:10px;margin-bottom:1.75rem}
+.q-row{display:flex;gap:12px;align-items:flex-start}
+.q-num{font-size:12px;color:#7A9B49;font-weight:700;margin-top:2px;flex-shrink:0;width:16px}
+.q-label{font-size:14px;color:#555;line-height:1.5}
+.progress{display:flex;gap:5px;margin-bottom:1.5rem}
+.pip{height:4px;border-radius:2px;flex:1;background:#e8e8e5;transition:background .3s}
+.pip.done{background:#7A9B49}
+.pip.active{background:#7A9B49;opacity:.45}
+textarea{width:100%;min-height:110px;font-size:15px;padding:.8rem;border:1px solid #ddd;border-radius:8px;background:#fafaf8;color:#1a1a1a;resize:vertical;font-family:inherit;line-height:1.6;transition:border-color .15s}
+textarea:focus{outline:none;border-color:#7A9B49;background:#fff}
+.followup-box{background:#EAF3DE;border-radius:8px;padding:1rem 1.25rem;margin:1.25rem 0 .75rem}
+.followup-lbl{font-size:11px;font-weight:700;color:#3B6D11;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem}
+.followup-q{font-size:15px;color:#27500A;line-height:1.5;font-weight:500}
+.btn-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1.25rem}
+.btn-p{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;padding:11px 20px;background:#7A9B49;color:#fff;border:none;border-radius:8px;cursor:pointer;transition:background .15s}
+.btn-p:hover{background:#546121}
+.btn-p:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.btn-s{display:inline-flex;align-items:center;gap:6px;font-size:14px;padding:11px 18px;background:transparent;color:#444;border:1px solid #ddd;border-radius:8px;cursor:pointer;transition:background .15s}
+.btn-s:hover{background:#f5f5f3}
+.done-icon{width:48px;height:48px;background:#EAF3DE;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
+.note{font-size:12px;color:#bbb;text-align:center;margin-top:1.25rem}
+.submitting{text-align:center;padding:3rem 2rem}
+.dots{display:flex;justify-content:center;gap:6px;margin-top:1rem}
+.dot{width:8px;height:8px;border-radius:50%;background:#7A9B49;animation:pulse 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,100%{opacity:.2}50%{opacity:1}}
+@media(max-width:480px){body{padding:1rem .75rem}.card{padding:1.5rem}.h1{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo"><span class="logo-mark">K&D Commercial</span></div>
+  <div id="app"></div>
+  <p class="note">Completely anonymous &mdash; no name, no email, no tracking</p>
+</div>
+<script>
+const SUPABASE_URL = "https://rlhfofdsdpsiavikuxhd.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsaGZvZmRzZHBzaWF2aWt1eGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NzgxOTcsImV4cCI6MjA5NTA1NDE5N30.yq77u8dHlTEqhbt3RI2QkRtGHoSlfP1DB1V0vfsMXIE";
+
+const QA = [
+  {
+    q: "What's one thing that's working well in your day to day right now?",
+    followup:{short:"Give me a specific example — what happened and who made it work?",long:"Who or what made that possible, and is there a way to repeat it on every job?"}
+  },
+  {
+    q: "What's one thing holding the team back that we're not talking about?",
+    followup:{short:"Say more — how long has this been an issue and where do you feel it most?",long:"How long has this been a problem, and if you could fix one part of it tomorrow, what would it be?"}
+  },
+  {
+    q: "What would winning look like to you in this role a year from now?",
+    followup:{short:"Be specific — what would your day-to-day look like if that was real?",long:"What's the one thing that would need to change — from leadership, the team, or the work itself — for that to happen?"}
+  },
+  {
+    q: "What's one thing that would make you more bought in to where we're headed?",
+    followup:{short:"What would that actually look like in practice — what would you need to see or hear?",long:"Is this something leadership can control, or is it more about how the team operates day to day?"}
+  },
+  {
+    q: "What are you hoping to get from the planning session?",
+    followup:{short:"Be specific — what would make you leave that session feeling like it was worth your time?",long:"What's the one outcome that would make this session feel like a success to you?"}
+  },
+  {
+    q: "What's one thing you would like to walk away with?",
+    followup:{short:"Say more — is that something tangible like a plan, or more about clarity and alignment?",long:"How would having that change how you show up the next day?"}
+  },
+  {
+    q: "What's one thing you need from your department leader to be successful?",
+    followup:{short:"Be specific — what would that actually look like on a week to week basis?",long:"If that was in place starting tomorrow, how would it change how you show up?"}
+  }
+];
+
+let state = {
+  phase: "intro",
+  step: 0,
+  answers: ["","","","","","",""],
+  fAnswers: ["","","","","","",""],
+  showF: false
+};
+
+function fq(i){
+  return (state.answers[i]||"").trim().split(/\s+/).filter(Boolean).length < 8
+    ? QA[i].followup.short : QA[i].followup.long;
+}
+
+function render(){
+  const app = document.getElementById("app");
+
+  if(state.phase === "intro"){
+    app.innerHTML = `
+      <div class="card">
+        <div class="tag">Team Check-In</div>
+        <div class="accent"></div>
+        <div class="h1">We want to hear from you.</div>
+        <p class="sub">Seven questions. Completely anonymous — no name, no email, nothing that ties back to you. Your honest answers go directly to Brian. Takes about 10 minutes.</p>
+        <div class="q-list">
+          ${QA.map((item,i)=>`<div class="q-row"><span class="q-num">${i+1}</span><span class="q-label">${item.q}</span></div>`).join("")}
+        </div>
+        <button class="btn-p" onclick="go('question')">Start &#8594;</button>
+      </div>`;
+    return;
+  }
+
+  if(state.phase === "question"){
+    const i = state.step;
+    const hasPrimary = state.answers[i].trim().length > 0;
+    const hasFA = state.fAnswers[i].trim().length > 0;
+    const isLast = i === QA.length - 1;
+    app.innerHTML = `
+      <div class="progress">
+        ${QA.map((_,j)=>`<div class="pip ${j<i?'done':j===i?'active':''}"></div>`).join("")}
+      </div>
+      <div class="card">
+        <div class="tag">Question ${i+1} of ${QA.length}</div>
+        <div class="accent"></div>
+        <div class="h1">${QA[i].q}</div>
+        <textarea id="ans" placeholder="Type your answer here..."
+          oninput="state.answers[${i}]=this.value;ub('btn-next',this.value.trim().length>0)">${state.answers[i]}</textarea>
+        ${state.showF?`
+          <div class="followup-box">
+            <div class="followup-lbl">Follow-up</div>
+            <div class="followup-q">${fq(i)}</div>
+          </div>
+          <textarea id="fans" placeholder="Your answer..."
+            oninput="state.fAnswers[${i}]=this.value;ub('btn-cont',this.value.trim().length>0)">${state.fAnswers[i]}</textarea>`:""}
+        <div class="btn-row">
+          ${!state.showF
+            ?`<button class="btn-p" id="btn-next" ${!hasPrimary?"disabled":""} onclick="showF()">Next &#8594;</button>`
+            :`<button class="btn-p" id="btn-cont" ${!hasFA?"disabled":""} onclick="nextQ()">${isLast?"Finish &#8594;":"Continue &#8594;"}</button>`}
+          ${i>0?`<button class="btn-s" onclick="prevQ()">&#8592; Back</button>`:""}
+        </div>
+      </div>`;
+    return;
+  }
+
+  if(state.phase === "submitting"){
+    app.innerHTML = `
+      <div class="card submitting">
+        <div style="font-size:15px;color:#666">Submitting your responses...</div>
+        <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      </div>`;
+    return;
+  }
+
+  if(state.phase === "done"){
+    app.innerHTML = `
+      <div class="card">
+        <div class="done-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <div class="tag">Submitted</div>
+        <div class="accent"></div>
+        <div class="h1">Done. Thank you.</div>
+        <p class="sub">Your responses have been sent directly to Brian. See you at the planning session.</p>
+      </div>`;
+    return;
+  }
+
+  if(state.phase === "error"){
+    app.innerHTML = `
+      <div class="card">
+        <div class="h1">Something went wrong</div>
+        <p class="sub" style="margin-top:.5rem">Could not submit. Please try again.</p>
+        <button class="btn-p" style="margin-top:1.25rem" onclick="submit()">Try again &#8594;</button>
+      </div>`;
+  }
+}
+
+function go(p){state.phase=p;render();}
+function ub(id,e){const b=document.getElementById(id);if(b)b.disabled=!e;}
+
+function showF(){
+  if(!state.answers[state.step].trim())return;
+  state.showF=true;render();
+  setTimeout(()=>{const e=document.getElementById("fans");if(e)e.focus();},50);
+}
+
+function nextQ(){
+  if(!state.fAnswers[state.step].trim())return;
+  if(state.step<QA.length-1){
+    state.step++;state.showF=state.fAnswers[state.step].trim().length>0;render();
+    setTimeout(()=>{const e=document.getElementById("ans");if(e)e.focus();},50);
+  } else { submit(); }
+}
+
+function prevQ(){
+  if(state.step>0){state.step--;state.showF=state.fAnswers[state.step].trim().length>0;render();}
+}
+
+async function submit(){
+  state.phase="submitting";render();
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/team_checkin`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}`,"Prefer":"return=minimal"},
+      body:JSON.stringify({
+        q1:state.answers[0],q1_followup:fq(0),q1_followup_answer:state.fAnswers[0],
+        q2:state.answers[1],q2_followup:fq(1),q2_followup_answer:state.fAnswers[1],
+        q3:state.answers[2],q3_followup:fq(2),q3_followup_answer:state.fAnswers[2],
+        q4:state.answers[3],q4_followup:fq(3),q4_followup_answer:state.fAnswers[3],
+        q5:state.answers[4],q5_followup:fq(4),q5_followup_answer:state.fAnswers[4],
+        q6:state.answers[5],q6_followup:fq(5),q6_followup_answer:state.fAnswers[5],
+        q7:state.answers[6],q7_followup:fq(6),q7_followup_answer:state.fAnswers[6]
+      })
+    });
+    if(!res.ok)throw new Error(await res.text());
+    state.phase="done";render();
+  }catch(e){state.phase="error";render();}
+}
+
+render();
+</script>
+</body>
+</html>
